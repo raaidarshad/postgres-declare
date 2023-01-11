@@ -48,12 +48,12 @@ class Entity(ABC):
             )
 
     @abstractmethod
-    def create(self) -> None:
+    def _create(self) -> None:
         pass
 
-    def safe_create(self) -> None:
-        if not self.exists():
-            self.create()
+    def _safe_create(self) -> None:
+        if not self._exists():
+            self._create()
         else:
             if self.check_if_exists or self.check_if_any_exist:
                 raise EntityExistsError(
@@ -66,23 +66,17 @@ class Entity(ABC):
                 # TODO log that we no-op?
                 pass
 
-    @classmethod
-    def create_all(cls, engine: Engine) -> None:
-        cls._engine = engine
-        for entity in cls.entities:
-            entity.safe_create()
-
     @abstractmethod
-    def exists(self) -> bool:
+    def _exists(self) -> bool:
         pass
 
     @abstractmethod
-    def remove(self) -> None:
+    def _drop(self) -> None:
         pass
 
-    def safe_remove(self) -> None:
-        if self.exists():
-            self.remove()
+    def _safe_drop(self) -> None:
+        if self._exists():
+            self._drop()
         else:
             if self.check_if_exists or self.check_if_any_exist:
                 raise EntityExistsError(
@@ -95,12 +89,6 @@ class Entity(ABC):
             else:
                 # TODO log that we no-op?
                 pass
-
-    @classmethod
-    def remove_all(cls, engine: Engine) -> None:
-        cls._engine = engine
-        for entity in reversed(cls.entities):
-            entity.safe_remove()
 
     def _get_passed_args(self) -> dict[str, Any]:
         # grab all the arguments to __init__ that aren't in the superclass and have a non-None value

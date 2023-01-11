@@ -3,24 +3,26 @@ from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 from sqlalchemy import Engine
 
-from postgres_declare.base_entity import Entity
-from postgres_declare.cluster_entities import Database, Role
+from postgres_declare.base import Base
+from postgres_declare.entities.database import Database
+from postgres_declare.entities.entity import Entity
+from postgres_declare.entities.role import Role
 
 
 def test_does_not_exist(simple_db: Database) -> None:
-    assert not simple_db.exists()
+    assert not simple_db._exists()
 
 
 @pytest.mark.order(after="test_does_not_exist")
 def test_create(simple_db: Database) -> None:
-    simple_db.safe_create()
-    assert simple_db.exists()
+    simple_db._safe_create()
+    assert simple_db._exists()
 
 
 @pytest.mark.order(after="test_create")
-def test_remove(simple_db: Database) -> None:
-    simple_db.safe_remove()
-    assert not simple_db.exists()
+def test_drop(simple_db: Database) -> None:
+    simple_db._safe_drop()
+    assert not simple_db._exists()
 
 
 @given(
@@ -29,28 +31,28 @@ def test_remove(simple_db: Database) -> None:
     is_template=st.booleans(),
 )
 @settings(suppress_health_check=[HealthCheck.function_scoped_fixture])
-@pytest.mark.order(after="test_remove")
+@pytest.mark.order(after="test_drop")
 def test_inputs(allow_connections: bool, connection_limit: int, is_template: bool, engine: Engine) -> None:
     Entity._engine = engine
     temp_db = Database(
         name="bar", allow_connections=allow_connections, connection_limit=connection_limit, is_template=is_template
     )
-    temp_db.safe_create()
-    temp_db.safe_remove()
+    temp_db._safe_create()
+    temp_db._safe_drop()
 
 
 @pytest.mark.parametrize("template", ["template0", "template1"])
-@pytest.mark.order(after="test_remove")
+@pytest.mark.order(after="test_drop")
 def test_specific_inputs(template: str, engine: Engine) -> None:
     Entity._engine = engine
     temp_db = Database(name="foobar", template=template)
-    temp_db.safe_create()
-    temp_db.safe_remove()
+    temp_db._safe_create()
+    temp_db._safe_drop()
 
 
-@pytest.mark.order(after="test_remove")
+@pytest.mark.order(after="test_drop")
 def test_dependency_inputs(engine: Engine) -> None:
     existing_role = Role(name="existing_role_for_db")
     Database(name="has_owner", owner=existing_role)
-    Entity.create_all(engine)
-    Entity.remove_all(engine)
+    Base.create_all(engine)
+    Base.drop_all()

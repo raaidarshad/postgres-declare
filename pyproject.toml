@@ -48,8 +48,3 @@ files = "."
 exclude = [
     '\.venv',
 ]
-
-[tool.pytest.ini_options]
-markers = [
-    "with_db: marks tests as those that need a DB present to interact with (deselect with '-m \"not slow\"')"
-]
